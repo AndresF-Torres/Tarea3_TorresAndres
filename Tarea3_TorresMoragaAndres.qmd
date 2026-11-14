@@ -4,3 +4,103 @@ format: html
 editor: visual
 ---
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(dplyr)
+library(ggplot2)
+
+source("cod/funciones_tarea3.R")
+parametros <- read.csv("config/parametros_tarea3.csv", sep = ";")
+params <- setNames(parametros$valor, parametros$parametro)
+ventana <- as.numeric(params["ventana"])
+k.alerta <- as.numeric(params["k.alerta"])
+canal.benford <- params["canal.benford"]
+tasa.anual <- as.numeric(params["tasa.anual"])
+canal.interes <- params["canal.interes"]
+transacciones <- read.csv("data/transacciones_2025.csv", sep = ";")
+
+
+ej1 <- alerta.movil(transacciones, ventana, k.alerta)
+
+ej1.a <- sum(ej1$alerta, na.rm = TRUE)
+
+ej1.b <- ej1[match(TRUE, ej1$alerta), 1]
+
+df.comun <- alerta.movil(transacciones, 7, 2)
+
+ej1.c <- sum(df.comun$alerta, na.rm = TRUE)
+
+
+figura.ej1 <- ggplot(ej1, aes(x = as.Date(fecha), y = n.tx)) +
+  
+  # Línea base de transacciones 
+  geom_line(color = "#2b5c8f", linewidth = 0.5, alpha = 0.8) +
+  
+  # Línea de la media móvil
+  geom_line(aes(y = media), color = "#e67e22", linetype = "dashed", linewidth = 0.7) +
+  
+  # Puntos rojos  los días con alerta
+  geom_point(data = subset(ej1, alerta == TRUE), 
+             color = "#e74c3c", size = 2.5, shape = 19) +
+  
+  # Escala del eje X: marcas mes a mes
+  scale_x_date(
+    date_breaks = "1 month", 
+    date_labels = "%b %Y"
+  ) +
+  
+  # Etiquetas y diseño estético
+  labs(
+    title = "Monitoreo Anual de Transacciones y Detección de Anomalías",
+    subtitle = "Serie temporal con umbral de media móvil estricta",
+    x = "Mes",
+    y = "Número de Transacciones"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", size = 12, margin = margin(b = 5)),
+    plot.subtitle = element_text(color = "gray40", size = 10, margin = margin(b = 15)),
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave(
+  filename = "info/figuras/alerta.movil.ej1.png", 
+  plot = figura.ej1, 
+  width = 10, 
+  height = 5, 
+  dpi = 300
+)
+
+
+```
+
+
+```{r results='asis'}
+
+cat(
+  paste0(
+    "RESULTADO 1A = ", ej1.a, "\n",
+    "RESULTADO 1B = ", ej1.b, "\n",
+    "RESULTADO 1C = ", ej1.c, "\n"
+  )
+)
+```
+
+
+
+
+
+
+
+
+```{r}
+#| warning: false
+print(figura.ej1)
+```
+
+
+
