@@ -4,3 +4,43 @@ format: html
 editor: visual
 ---
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+source("cod/funciones_tarea3.R")
+parametros <- read.csv("config/parametros_tarea3.csv", sep = ";")
+params <- setNames(parametros$valor, parametros$parametro)
+ventana <- as.numeric(params["ventana"])
+k.alerta <- as.numeric(params["k.alerta"])
+canal.benford <- params["canal.benford"]
+tasa.anual <- as.numeric(params["tasa.anual"])
+canal.interes <- params["canal.interes"]
+transacciones <- read.csv("data/transacciones_2025.csv", sep = ";")
+
+
+ej1 <- alerta.movil(transacciones, ventana, k.alerta)
+
+ej1.a <- sum(ej1$alerta, na.rm = TRUE)
+
+ej1.b <- ej1[match(TRUE, ej1$alerta), 1]
+
+df.comun <- alerta.movil(transacciones, 7, 2)
+
+ej1.c <- sum(df.comun$alerta, na.rm = TRUE)
+
+
+```
+
+
+```{r results='asis'}
+
+cat(
+  paste0(
+    "RESULTADO 1A = ", ej1.a, "\n",
+    "RESULTADO 1B = ", ej1.b, "\n",
+    "RESULTADO 1C = ", ej1.c, "\n"
+  )
+)
+```
