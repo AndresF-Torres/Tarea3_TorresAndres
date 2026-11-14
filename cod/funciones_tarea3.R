@@ -36,3 +36,55 @@ alerta.movil <- function(df, ventana, k.alerta){
   
 }
 
+
+benford.mad <- function(x){
+  x <- x[x > 0 & !is.na(x)]
+  
+  d <- floor(x/10^floor(log10(x)))
+  
+  Bd <- log10(1+1/(1:9))
+  
+  Pd <- tabulate(d, nbins = 9) / length(d)
+  
+  mean(abs(Pd - Bd))
+}
+
+benford.canton <- function(df, canal1, cantones){
+ 
+  
+  solo.cantones <- cantones %>% 
+    select(-provincia)
+  
+    df %>%
+      filter(canal == canal1, cod_canton %in% solo.cantones$cod_canton) %>%
+      summarise(
+        n = sum(!is.na(monto_crc)),
+        mad = benford.mad(monto_crc),
+        .by = cod_canton
+      ) %>% mutate(
+        clase = case_when(
+          mad < 0.006 ~ "conformidad cercana",
+          mad < 0.012 ~ "conformidad aceptable",
+          mad < 0.015 ~ "conformidad marginal",
+          .default = "no conformidad"
+        )
+      ) %>% 
+      left_join(
+        solo.cantones,
+        "cod_canton"
+      ) %>% 
+      select(cod_canton, canton, n, mad, clase)
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
