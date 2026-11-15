@@ -1,4 +1,5 @@
 library(dplyr)
+library(lubridate)
 
 alerta.movil <- function(df, ventana, k.alerta){
   
@@ -35,6 +36,12 @@ alerta.movil <- function(df, ventana, k.alerta){
   return(resultados)
   
 }
+
+
+
+
+
+# ej2
 
 
 benford.mad <- function(x){
@@ -79,6 +86,50 @@ benford.canton <- function(df, canal1, cantones){
 
 
 
+# ej3
+
+
+valor.acumulado <- function(df, tasa.anual, canal1) {
+ 
+  df.filtrado <- df %>%
+    filter(canal == canal1) %>%
+    mutate(
+      fecha = as.Date(fecha),
+      mes = month(fecha)
+    ) %>%
+    group_by(mes) %>%
+    summarise(monto = sum(monto_crc, na.rm = TRUE)) %>%
+    ungroup()
+  
+
+  # Calcular la tasa efectiva mensual equivalente 
+  tasa.mensual <- (1 + tasa.anual)^(1 / 12) - 1
+  
+  
+  
+  # Calcular el factor de capitalización y el valor parcial por mes
+  df.mensual <- df.filtrado %>%
+    mutate(
+      factor = (1 + tasa.mensual)^(12 - mes),
+      valor.parcial = monto * factor
+    )
+  
+  # Calcular el Valor Acumulado (VA) y los intereses totales
+  va <- sum(df.mensual$valor.parcial)
+  suma.montos <- sum(df.mensual$monto)
+  interes <- va - suma.montos
+  
+  
+  tabla <- df.mensual %>% 
+    select(mes, monto, factor)
+  
+  return(list(
+    tabla = tabla,
+    tasa.mensual = tasa.mensual,
+    va = va,
+    interes = interes
+  ))
+}
 
 
 
