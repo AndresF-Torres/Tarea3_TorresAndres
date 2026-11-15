@@ -28,6 +28,9 @@ cantones <- read.csv("data/cantones.csv")
 ```
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
 # ejercicio 1
 ej1 <- alerta.movil(transacciones, ventana, k.alerta)
 
@@ -86,6 +89,7 @@ ggsave(
 
 
 ```{r}
+#| echo: false
 #| message: false
 #| warning: false
 
@@ -160,6 +164,236 @@ ggsave(
 
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+ej3 <- valor.acumulado(transacciones, tasa.anual, canal.interes)
+
+ej3.a <- round(ej3$va, 2)
+
+ej3.b <- round(ej3$interes, 2)
+
+ej3.c <- round(valor.acumulado(transacciones, tasa.anual = 0.06, canal1 = "App")$va, 2)
+
+
+
+
+df.grafico <- ej3$tabla %>%
+  mutate(
+    valor.acum.dic = monto * factor
+  )
+
+p1 <- ggplot(df.grafico, aes(x = mes, y = monto)) +
+  geom_line(color = "#2b5c8f", linewidth = 1.2) +
+  geom_point(color = "#2b5c8f", size = 2.5) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(
+    title = "Monto Mensual",
+    x = "Mes",
+    y = "Monto (CRC)"
+  ) +
+  theme_minimal()
+
+# Gráfico de líneas 2: Valor acumulado al 31-dic
+p2 <- ggplot(df.grafico, aes(x = mes, y = valor.acum.dic)) +
+  geom_line(color = "#d95f02", linewidth = 1.2) +
+  geom_point(color = "#d95f02", size = 2.5) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(
+    title = "Valor Acumulado al 31-dic",
+    x = "Mes",
+    y = "Valor Acumulado (CRC)"
+  ) +
+  theme_minimal()
+
+# Unir ambos gráficos de líneas lado a lado
+figura.ej3 <- p1+p2
+ggsave(
+  filename = "info/figuras/valor.acumulado.ej3.png", 
+  plot = figura.ej3, 
+  width = 10, 
+  height = 5, 
+  dpi = 300
+)
+```
+
+# Tabla de respuestas 
+
+```{r results='asis'}
+#| echo: false
+
+cat("```text\n")
+cat(
+  paste0(
+    "RESULTADO_1A = ", ej1.a, "\n",
+    "RESULTADO_1B = ", ej1.b, "\n",
+    "RESULTADO_1C = ", ej1.c, "\n",
+    "RESULTADO_2A = ", ej2.a, "\n",
+    "RESULTADO_2B = ", ej2.b, "\n",
+    "RESULTADO_2C = ", ej2.c, "\n",
+    "RESULTADO_2D = ", ej2.d, "\n",
+    "RESULTADO_3A = ", ej3.a, "\n",
+    "RESULTADO_3B = ", ej3.b, "\n",
+    "RESULTADO_3C = ", ej3.c, "\n"
+  )
+)
+cat("```\n")
+```
+# ejercicios 
+
+## ejercicio 1 
+
+```{r}
+#| message: false
+#| warning: false
+
+ej1 <- alerta.movil(transacciones, ventana, k.alerta)
+
+ej1.a <- sum(ej1$alerta, na.rm = TRUE)
+
+ej1.b <- ej1[match(TRUE, ej1$alerta), 1]
+
+df.comun <- alerta.movil(transacciones, 7, 2)
+
+ej1.c <- sum(df.comun$alerta, na.rm = TRUE)
+
+
+figura.ej1 <- ggplot(ej1, aes(x = as.Date(fecha), y = n.tx)) +
+  
+  # Línea base de transacciones 
+  geom_line(color = "#2b5c8f", linewidth = 0.5, alpha = 0.8) +
+  
+  # Línea de la media móvil
+  geom_line(aes(y = media), color = "#e67e22", linetype = "dashed", linewidth = 0.7) +
+  
+  # Puntos rojos  los días con alerta
+  geom_point(data = subset(ej1, alerta == TRUE), 
+             color = "#e74c3c", size = 2.5, shape = 19) +
+  
+  # Escala del eje X: marcas mes a mes
+  scale_x_date(
+    date_breaks = "1 month", 
+    date_labels = "%b %Y"
+  ) +
+  
+  # Etiquetas y diseño estético
+  labs(
+    title = "Monitoreo Anual de Transacciones y Detección de Anomalías",
+    subtitle = "Serie temporal con umbral de media móvil estricta",
+    x = "Mes",
+    y = "Número de Transacciones"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", size = 12, margin = margin(b = 5)),
+    plot.subtitle = element_text(color = "gray40", size = 10, margin = margin(b = 15)),
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave(
+  filename = "info/figuras/alerta.movil.ej1.png", 
+  plot = figura.ej1, 
+  width = 10, 
+  height = 5, 
+  dpi = 300
+)
+
+
+```
+
+```{r}
+#| warning: false
+print(figura.ej1)
+```
+
+
+## ejercicio 2
+
+```{r}
+#| message: false
+#| warning: false
+
+# ejerccio 2
+
+ej2 <- benford.canton(transacciones, canal.benford, cantones)
+
+# Filtrar todos los montos del canal completo
+montos.canal <- transacciones %>%
+  filter(canal == canal.benford, !is.na(monto_crc), monto_crc > 0) %>%
+  pull(monto_crc)
+
+ej2.a <- round(benford.mad(montos.canal), 4)
+
+
+ej2.b <- ej2%>%
+  slice_max(mad, n = 1) %>% 
+  select(canton)
+
+
+ej2.c <- ej2 %>% 
+  filter(mad > 0.015) %>% 
+  nrow()
+
+
+ej2.d <- benford.canton(transacciones, "Web", cantones) %>%
+  slice_max(mad, n = 1) %>% 
+  select(canton)
+
+
+# 1. Preparar datos de Benford teóricos y observados
+benford.teorico <- data.frame(
+  digito = factor(1:9),
+  p.benford = log10(1 + 1 / (1:9))
+)
+
+datos.grafico <- transacciones %>%
+  filter(canal == canal.benford, !is.na(monto_crc), monto_crc > 0) %>%
+  mutate(digito = factor(as.numeric(substr(as.character(monto_crc), 1, 1)))) %>%
+  filter(digito %in% factor(1:9)) %>%
+  count(digito) %>%
+  mutate(p.d = n / sum(n)) %>%
+  right_join(benford.teorico, by = "digito") %>%
+  mutate(p.d = coalesce(p.d, 0))
+
+# 2. Generar el gráfico de barras vs curva/línea de Benford
+figura.ej2 <- ggplot(datos.grafico, aes(x = digito)) +
+  geom_col(aes(y = p.d, fill = "Canal (Observado)"), alpha = 0.7, width = 0.6) +
+  geom_line(aes(y = p.benford, group = 1, color = "Ley de Benford"), size = 1.2) +
+  geom_point(aes(y = p.benford, color = "Ley de Benford"), size = 2.5) +
+  scale_fill_manual(name = "", values = c("Canal (Observado)" = "#2b5c8f")) +
+  scale_color_manual(name = "", values = c("Ley de Benford" = "#d95f02")) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(
+    title = paste("Distribución del Primer Dígito - Canal", canal.benford),
+    x = "Primer Dígito (d)",
+    y = "Proporción (p.d)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+
+ggsave(
+  filename = "info/figuras/ley.Benford.ej2.png", 
+  plot = figura.ej2, 
+  width = 10, 
+  height = 5, 
+  dpi = 300
+)
+```
+
+
+```{r}
+#| warning: false
+print(figura.ej2)
+```
+Se ve que los 3 cantones con mayores MAD son también cantones con muy pocas transacciones, entonces no son necesariamente fraude si no que tienen muy pocos datos 
+
+
+## ejercicio 3
+
+```{r}
 #| message: false
 #| warning: false
 
@@ -215,45 +449,14 @@ ggsave(
 
 
 
-```{r results='asis'}
-
-cat(
-  paste0(
-    "RESULTADO 1A = ", ej1.a, "\n",
-    "RESULTADO 1B = ", ej1.b, "\n",
-    "RESULTADO 1C = ", ej1.c, "\n",
-    "RESULTADO 2A = ", ej2.a, "\n",
-    "RESULTADO 2B = ", ej2.b, "\n",
-    "RESULTADO 2C = ", ej2.c, "\n",
-    "RESULTADO 2D = ", ej2.d, "\n",
-    "RESULTADO 3A = ", ej3.a, "\n",
-    "RESULTADO 3B = ", ej3.b, "\n",
-    "RESULTADO 3C = ", ej3.c, "\n"
-  )
-)
-```
-
-```{r}
-#| warning: false
-print(figura.ej1)
-```
-
-
-
-```{r}
-#| warning: false
-print(figura.ej2)
-```
-Se ve que los 3 cantones con mayores MAD son también cantones con muy pocas transacciones, entonces no son necesariamente fraude si no que tienen muy pocos datos 
-
-
 ```{r}
 #| warning: false
 print(figura.ej3)
 ```
 
 
+::: {style="text-align: center;"}
+### Anexos: Repositorio Git
 
-
-
-
+[https://github.com/AndresF-Torres/Tarea3_TorresAndres](https://github.com/AndresF-Torres/Tarea3_TorresAndres)
+:::
