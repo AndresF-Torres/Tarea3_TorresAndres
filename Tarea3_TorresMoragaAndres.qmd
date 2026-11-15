@@ -11,6 +11,8 @@ editor: visual
 
 library(dplyr)
 library(ggplot2)
+library(patchwork)
+
 
 source("cod/funciones_tarea3.R")
 parametros <- read.csv("config/parametros_tarea3.csv", sep = ";")
@@ -26,7 +28,7 @@ cantones <- read.csv("data/cantones.csv")
 ```
 
 ```{r}
-
+# ejercicio 1
 ej1 <- alerta.movil(transacciones, ventana, k.alerta)
 
 ej1.a <- sum(ej1$alerta, na.rm = TRUE)
@@ -86,6 +88,9 @@ ggsave(
 ```{r}
 #| message: false
 #| warning: false
+
+# ejerccio 2
+
 ej2 <- benford.canton(transacciones, canal.benford, cantones)
 
 # Filtrar todos los montos del canal completo
@@ -123,7 +128,7 @@ datos.grafico <- transacciones %>%
   filter(digito %in% factor(1:9)) %>%
   count(digito) %>%
   mutate(p.d = n / sum(n)) %>%
-  right_join(benford_teorico, by = "digito") %>%
+  right_join(benford.teorico, by = "digito") %>%
   mutate(p.d = coalesce(p.d, 0))
 
 # 2. Generar el gráfico de barras vs curva/línea de Benford
@@ -145,7 +150,7 @@ figura.ej2 <- ggplot(datos.grafico, aes(x = digito)) +
 
 ggsave(
   filename = "info/figuras/ley.Benford.ej2.png", 
-  plot = figura.ej1, 
+  plot = figura.ej2, 
   width = 10, 
   height = 5, 
   dpi = 300
@@ -153,6 +158,60 @@ ggsave(
 
 ```
 
+
+```{r}
+#| message: false
+#| warning: false
+
+ej3 <- valor.acumulado(transacciones, tasa.anual, canal.interes)
+
+ej3.a <- round(ej3$va, 2)
+
+ej3.b <- round(ej3$interes, 2)
+
+ej3.c <- round(valor.acumulado(transacciones, tasa.anual = 0.06, canal1 = "App")$va, 2)
+
+
+
+
+df.grafico <- ej3$tabla %>%
+  mutate(
+    valor.acum.dic = monto * factor
+  )
+
+p1 <- ggplot(df.grafico, aes(x = mes, y = monto)) +
+  geom_line(color = "#2b5c8f", linewidth = 1.2) +
+  geom_point(color = "#2b5c8f", size = 2.5) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(
+    title = "Monto Mensual",
+    x = "Mes",
+    y = "Monto (CRC)"
+  ) +
+  theme_minimal()
+
+# Gráfico de líneas 2: Valor acumulado al 31-dic
+p2 <- ggplot(df.grafico, aes(x = mes, y = valor.acum.dic)) +
+  geom_line(color = "#d95f02", linewidth = 1.2) +
+  geom_point(color = "#d95f02", size = 2.5) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(
+    title = "Valor Acumulado al 31-dic",
+    x = "Mes",
+    y = "Valor Acumulado (CRC)"
+  ) +
+  theme_minimal()
+
+# Unir ambos gráficos de líneas lado a lado
+figura.ej3 <- p1+p2
+ggsave(
+  filename = "info/figuras/valor.acumulado.ej3.png", 
+  plot = figura.ej3, 
+  width = 10, 
+  height = 5, 
+  dpi = 300
+)
+```
 
 
 
@@ -166,7 +225,10 @@ cat(
     "RESULTADO 2A = ", ej2.a, "\n",
     "RESULTADO 2B = ", ej2.b, "\n",
     "RESULTADO 2C = ", ej2.c, "\n",
-    "RESULTADO 2D = ", ej2.d, "\n"
+    "RESULTADO 2D = ", ej2.d, "\n",
+    "RESULTADO 3A = ", ej3.a, "\n",
+    "RESULTADO 3B = ", ej3.b, "\n",
+    "RESULTADO 3C = ", ej3.c, "\n"
   )
 )
 ```
@@ -185,6 +247,10 @@ print(figura.ej2)
 Se ve que los 3 cantones con mayores MAD son también cantones con muy pocas transacciones, entonces no son necesariamente fraude si no que tienen muy pocos datos 
 
 
+```{r}
+#| warning: false
+print(figura.ej3)
+```
 
 
 
